@@ -2,6 +2,10 @@
 
 An agentic framework for hyperparameter tuning that runs parallel experiments using an exploration tree, while maintaining a transparent reasoning trace
 
+## Overview
+
+Hyperion is an open, agentic framework for hyperparameter optimization in the PyTorch ecosystem. Unlike traditional tuning libraries, Hyperion is built to orchestrate and reason about long-running, parallel model training experiments using an event-driven, agent-based approach. Experiments are represented as a dynamic graph, allowing the system to efficiently explore, branch, and prune hyperparameter configurations across multiple GPUs or nodes. Leveraging intelligent reasoning and traceable decision-making, Hyperion aims to automate the iterative process of finding optimal hyperparameters, reduce manual overhead, and provide interpretable insights for researchers and practitioners. The framework is highly modular and model-agnostic, supporting arbitrary architectures and training routines via a flexible interface.
+
 ## System Architecture
 
 ```mermaid
