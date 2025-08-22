@@ -1,0 +1,151 @@
+[tools]
+python = "3.13"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+# Installation tasks
+[tasks.install]
+description = "Install package in editable mode"
+run = "uv pip install -e ."
+
+[tasks.install-dev]
+description = "Install package with dev dependencies and setup pre-commit hooks"
+run = ["uv pip install -e '.[dev,viz,ml]'", "pre-commit install"]
+
+[tasks.install-ci]
+description = "Install package with CI dependencies"
+run = "uv pip install -e '.[dev]'"
+
+# Code quality tasks
+[tasks.format]
+description = "Format code with Ruff"
+run = "ruff format src/ tests/"
+
+[tasks.lint]
+description = "Lint code with Ruff"
+run = "ruff check src/ tests/"
+
+[tasks.lint-fix]
+description = "Fix lint issues with Ruff"
+run = "ruff check --fix src/ tests/"
+
+[tasks.fix]
+description = "Fix lint issues and format code"
+depends = ["lint-fix", "format"]
+
+[tasks.type-check]
+description = "Type check with Pyright"
+run = "pyright"
+
+# Testing tasks
+[tasks.test]
+description = "Run tests"
+run = "pytest tests/ -v"
+
+[tasks.test-cov]
+description = "Run tests with coverage"
+run = "pytest tests/ --cov=hyperion --cov-report=term-missing --cov-report=html"
+
+# Composite tasks
+[tasks.check]
+description = "Run all checks"
+depends = ["lint", "type-check", "test"]
+
+[tasks.all]
+description = "Fix and check all"
+depends = ["fix", "check"]
+
+# Maintenance tasks
+[tasks.clean]
+description = "Clean build artifacts"
+run = """
+find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find . -type f -name "*.pyc" -delete
+find . -type f -name "*.pyo" -delete
+find . -type f -name "*.pyd" -delete
+find . -type f -name ".coverage" -delete
+find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
+find . -type d -name "dist" -exec rm -rf {} + 2>/dev/null || true
+find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+"""
+
+# Build and Publishing tasks
+[tasks.build]
+description = "Build package distributions (sdist and wheel)"
+run = """
+rm -rf dist/ build/
+python -m build
+ls -lh dist/
+"""
+
+[tasks.test-publish]
+description = "Upload package to TestPyPI for testing (requires TEST_PYPI_API_TOKEN env var)"
+run = """
+if [ ! -d "dist" ]; then
+    echo "No dist/ directory found. Run 'mise run build' first."
+    exit 1
+fi
+echo "📦 Uploading to TestPyPI for testing..."
+echo "After upload, test with: pip install -i https://test.pypi.org/simple/ hyperion-opt"
+python -m twine upload --repository testpypi dist/*
+"""
+
+[tasks.release-prep]
+description = "Prepare for a new release"
+run = """
+echo "📋 Release Preparation Checklist:"
+echo ""
+echo "1. ✓ Update version in pyproject.toml"
+echo "2. ✓ Update CHANGELOG.md (if exists)"
+echo "3. ✓ Run 'mise run check' to ensure all tests pass"
+echo "4. ✓ Run 'mise run build' to test package building"
+echo "5. ✓ Run 'mise run check-package' to validate metadata"
+echo "6. ✓ Commit all changes"
+echo ""
+echo "📝 To create a release:"
+echo "   git tag -a v0.1.0 -m 'Release version 0.1.0'"
+echo "   git push origin v0.1.0"
+echo ""
+echo "🚀 GitHub Actions will automatically:"
+echo "   - Run full test suite"
+echo "   - Build the package"
+echo "   - Publish to PyPI (if release is created on GitHub)"
+echo ""
+echo "⚠️  Production publishing is handled by GitHub Actions only!"
+echo "    Set PYPI_API_TOKEN secret in GitHub repository settings."
+"""
+
+[tasks.check-package]
+description = "Check if the package builds correctly and validate metadata"
+run = """
+python -m build --sdist
+python -m twine check dist/*
+"""
+
+# UI Development tasks
+[tasks.ui-backend]
+description = "Start the backend API server (set HYPERION_DB_URL to override)"
+run = "HYPERION_DB_URL=${HYPERION_DB_URL:-sqlite:///hyperion.db} python -m ui.backend.app"
+
+[tasks.ui-frontend]
+description = "Start the frontend dev server"
+dir = "ui/frontend"
+run = "pnpm dev"
+
+[tasks.ui]
+description = "Start both backend and frontend servers"
+depends = ["ui-backend", "ui-frontend"]
+
+[tasks.ui-install]
+description = "Install frontend dependencies"
+dir = "ui/frontend"
+run = "pnpm install"
+
+[tasks.ui-build]
+description = "Build frontend for production"
+dir = "ui/frontend"
+run = "pnpm build"

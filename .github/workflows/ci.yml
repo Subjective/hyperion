@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mise and uv
+        run: |
+          curl https://mise.run | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Set up Python with mise
+        run: |
+          mise install python@${{ matrix.python-version }}
+          mise use python@${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          mise run install-ci
+
+      - name: Lint with Ruff
+        run: |
+          mise run lint
+
+      - name: Type check with Pyright
+        run: |
+          mise run type-check
+
+      - name: Test with pytest and coverage
+        run: |
+          # Run test-cov which generates HTML report
+          mise run test-cov
+          # Also generate XML report for codecov upload
+          .venv/bin/pytest tests/ --cov=hyperion --cov-report=xml -q
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+        if: matrix.python-version == '3.13'

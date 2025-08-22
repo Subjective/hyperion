@@ -1,0 +1,18 @@
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Ensure React Flow nodes can receive pointer events */
+.react-flow__node {
+  pointer-events: auto !important;
+}
+
+/* Make sure our custom nodes can receive all events */
+.react-flow__node-flippableCard {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
